@@ -30,4 +30,3 @@ A Node.JS application for watching videos with friends in real-time. Synchronize
    
 ## References 
    * SoFlix Client - https://github.com/tewebsolutions/soflix-client
-   * Github repository for Node.js REST API SDK - https://github.com/paypal/rest-api-sdk-nodejs
