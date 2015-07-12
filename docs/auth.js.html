@@ -1,0 +1,194 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <title>JSDoc: Source: auth.js</title>
+
+    <script src="scripts/prettify/prettify.js"> </script>
+    <script src="scripts/prettify/lang-css.js"> </script>
+    <!--[if lt IE 9]>
+      <script src="//html5shiv.googlecode.com/svn/trunk/html5.js"></script>
+    <![endif]-->
+    <link type="text/css" rel="stylesheet" href="styles/prettify-tomorrow.css">
+    <link type="text/css" rel="stylesheet" href="styles/jsdoc-default.css">
+</head>
+
+<body>
+
+<div id="main">
+
+    <h1 class="page-title">Source: auth.js</h1>
+
+    
+
+
+
+    
+    <section>
+        <article>
+            <pre class="prettyprint source linenums"><code>/**
+ * Auth module. 
+ * 
+ * Authentication module for Auth
+ * 
+ * @module auth/auth
+ */
+ 
+var passport = require('passport');
+var FacebookStrategy = require('passport-facebook');
+
+module.exports = function(app)
+{
+    var constants = app.constants;
+    
+    /**
+     * Status function, returns JSON with most up to date status
+     * 
+     * @param {Object} req
+     * @param {Object} res
+     */
+    var status = function(req, res){
+        var user = getUser(req, res);
+        res.json({
+                success: (user !== false),
+                user: user
+        });
+    };
+    
+    /**
+     * Error function, returns JSON with auth error
+     * 
+     * @param {Object} req
+     * @param {Object} res
+     * @param {Function} next
+     */
+    var error = function(req, res, next)
+    {
+        res.json({
+                success:false
+        });
+    }
+    
+    /**
+     * f_serializeUser - Serialize user information to store for Passport
+     * 
+     * @param {Object} req
+     * @param {Object} res
+     * @param {Function} next
+     */
+    var f_serializeUser = function (user, done, app) {
+        done(null, user.id);
+    };
+    
+    /**
+     * f_deserializeUser - Deserialize user information for Passport
+     * 
+     * @param {String} id
+     * @param {Function} done - Callback function
+     */
+    var f_deserializeUser = function (id, done) {
+        app.models.User.findOne({id:id}, function(err, user){
+            done(err, user);
+        });
+    };
+    
+    /**
+     * getUser - Deserialize user information for Passport
+     * 
+     * @param {String} id
+     * @param {Function} done - Callback function
+     */
+    var getUser = function(req, res, next)
+    {
+                
+        if (req &amp;&amp; req.session &amp;&amp; req.session.passport &amp;&amp; typeof req.session.passport.user!=="undefined")
+        {
+            var user_id = req.session.passport.user;
+            
+            if (typeof next=="function")
+            {
+                next(req, res, user_id);
+            }
+            
+            return user_id;
+        }
+        else
+        {
+            if (typeof next=="function")
+            {
+                next(req, res, false);
+            }
+            return false;
+        }
+        
+    }
+    
+    var fbStrategy = new FacebookStrategy({
+        clientID: constants.FACEBOOK_APP_ID,
+        clientSecret: constants.FACEBOOK_APP_SECRET,
+        callbackURL: constants.APPLICATION_URL+"/api/auth/facebook/callback"
+      },
+      function(accessToken, refreshToken, profile, done) {
+        console.log(app.models);
+        app.models.User.findOne({id: profile.id}, function(err, existing) {
+            if (existing!==null &amp;&amp; existing.id)
+            {
+                console.log("Found existing user ", existing.id);
+            }
+            else
+            {
+                console.log("New user found ", profile.id);
+                app.models.User.create(profile, function(err, newuser){
+                    console.log("Created user ", newuser._id);
+                    done(err, profile);
+                });
+            }
+        })
+        
+        return done(null, profile);
+      }
+    )
+
+    
+    var logout = function(req, res)
+    {
+        var user_id = app.auth.getUser(req, res);
+        app.room.leaveRooms(req, user_id);
+        req.logout();
+        res.redirect('#/account/logout');
+    }
+
+var exp = {};
+exp.passport = passport;
+exp.f_serializeUser = f_serializeUser;
+exp.f_deserializeUser = f_deserializeUser;
+exp.fbStrategy = fbStrategy;
+exp.error = error;
+exp.status = status;
+exp.getUser = getUser;
+exp.logout = logout;
+return exp;
+
+}</code></pre>
+        </article>
+    </section>
+
+
+
+
+</div>
+
+<nav>
+    <h2><a href="index.html">Home</a></h2><h3>Modules</h3><ul><li><a href="module-auth_auth.html">auth/auth</a></li><li><a href="module-components_chat.html">components/chat</a></li><li><a href="module-components_livedata.html">components/livedata</a></li><li><a href="module-components_player.html">components/player</a></li><li><a href="module-components_room.html">components/room</a></li><li><a href="module-components_user.html">components/user</a></li><li><a href="module-components_video.html">components/video</a></li><li><a href="module-models_models.html">models/models</a></li></ul>
+</nav>
+
+<br class="clear">
+
+<footer>
+    Documentation generated by <a href="https://github.com/jsdoc3/jsdoc">JSDoc 3.3.2</a> on Sun Jul 12 2015 19:28:09 GMT+0000 (UTC)
+</footer>
+
+<script> prettyPrint(); </script>
+<script src="scripts/linenumber.js"> </script>
+</body>
+</html>
